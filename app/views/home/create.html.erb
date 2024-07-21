@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>المحلل الرقمي الفائق</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <style>
+      @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+      body {
+          font-family: 'Cairo', sans-serif;
+          background: #000000;
+          overflow-x: hidden;
+      }
+      .neon-glow {
+          box-shadow: 0 0 10px #4fd1c5, 0 0 20px #4fd1c5, 0 0 30px #4fd1c5, 0 0 40px #4fd1c5;
+      }
+      .cyber-grid {
+          background-image:
+                  linear-gradient(rgba(16, 185, 129, 0.3) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(16, 185, 129, 0.3) 1px, transparent 1px);
+          background-size: 20px 20px;
+          background-position: center center;
+      }
+      .hologram {
+          background: linear-gradient(45deg, #00f2fe, #4facfe);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+      }
+  </style>
+</head>
+<body class="cyber-grid min-h-screen text-white flex items-center justify-center p-4">
+<div x-data="phoneApp()" x-init="initializeAnimations()" class="w-full max-w-4xl bg-black bg-opacity-80 rounded-3xl shadow-2xl overflow-hidden">
+  <div class="p-8 space-y-8">
+    <h1 class="text-6xl font-bold text-center hologram mb-10" id="mainTitle">المحلل الرقمي الفائق</h1>
+
+    <div x-show="!phoneInfo" class="space-y-6" id="searchSection">
+      <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 md:space-x-reverse">
+        <select x-model="countryCode" class="w-full md:w-1/3 p-4 rounded-lg bg-gray-800 text-white border border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-300 transition duration-300">
+          <option value="+966">🇸🇦 السعودية (+966)</option>
+          <option value="+20">🇪🇬 مصر (+20)</option>
+          <option value="+971">🇦🇪 الإمارات (+971)</option>
+        </select>
+        <input x-model="phoneNumber" type="text" placeholder="أدخل رقم الهاتف"
+               class="w-full md:w-2/3 p-4 rounded-lg bg-gray-800 text-white placeholder-gray-400 border border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-300 transition duration-300">
+      </div>
+      <button @click="searchPhone" class="w-full bg-gradient-to-r from-teal-400 to-blue-500 text-white p-4 rounded-lg hover:from-teal-500 hover:to-blue-600 transition duration-300 transform hover:scale-105 neon-glow">
+        <i class="fas fa-search-location mr-2"></i> تحليل الرقم
+      </button>
+    </div>
+
+    <div x-show="phoneInfo" class="space-y-8" id="resultSection" style="display: none;">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <template x-for="(value, key) in phoneInfo" :key="key">
+          <div class="bg-gray-800 p-6 rounded-xl hover:bg-gray-700 transition duration-300 transform hover:scale-105">
+            <span class="text-teal-300 text-lg block mb-2" x-text="getLabel(key)"></span>
+            <p class="font-bold text-2xl hologram" x-text="value"></p>
+          </div>
+        </template>
+      </div>
+
+      <div class="bg-gray-800 p-6 rounded-xl">
+        <h3 class="text-2xl font-bold mb-4 text-center hologram">تحليل الاستخدام</h3>
+        <canvas id="usageChart" class="w-full h-64"></canvas>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-gray-800 p-6 rounded-xl">
+          <h3 class="text-xl font-bold mb-4 text-center hologram">توزيع المكالمات</h3>
+          <canvas id="callDistributionChart"></canvas>
+        </div>
+        <div class="bg-gray-800 p-6 rounded-xl">
+          <h3 class="text-xl font-bold mb-4 text-center hologram">نشاط الرقم</h3>
+          <canvas id="activityChart"></canvas>
+        </div>
+      </div>
+
+      <div class="flex space-x-4 space-x-reverse">
+        <button @click="resetSearch" class="flex-1 bg-red-500 text-white p-4 rounded-lg hover:bg-red-600 transition duration-300 transform hover:scale-105">
+          <i class="fas fa-redo mr-2"></i> بحث جديد
+        </button>
+        <button @click="shareResults" class="flex-1 bg-green-500 text-white p-4 rounded-lg hover:bg-green-600 transition duration-300 transform hover:scale-105">
+          <i class="fas fa-share-alt mr-2"></i> مشاركة النتائج
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    function phoneApp() {
+        return {
+            countryCode: '+966',
+            phoneNumber: '',
+            phoneInfo: null,
+            searchPhone() {
+                this.phoneInfo = {
+                    number: this.countryCode + this.phoneNumber,
+                    country: 'المملكة العربية السعودية',
+                    carrier: 'STC',
+                    type: 'جوال',
+                    status: 'نشط',
+                    firstSeen: '15 يناير 2022',
+                    riskScore: 'منخفض'
+                };
+                this.$nextTick(() => {
+                    this.renderCharts();
+                    gsap.to("#searchSection", {duration: 0.5, opacity: 0, display: "none"});
+                    gsap.fromTo("#resultSection",
+                        {opacity: 0, y: 50, display: "none"},
+                        {duration: 0.8, opacity: 1, y: 0, display: "block", ease: "power3.out"}
+                    );
+                });
+            },
+            resetSearch() {
+                gsap.to("#resultSection", {duration: 0.5, opacity: 0, display: "none"});
+                gsap.fromTo("#searchSection",
+                    {opacity: 0, y: -50, display: "none"},
+                    {duration: 0.8, opacity: 1, y: 0, display: "block", ease: "power3.out"}
+                );
+                this.phoneInfo = null;
+                this.phoneNumber = '';
+            },
+            getLabel(key) {
+                const labels = {
+                    number: 'الرقم', country: 'الدولة', carrier: 'المشغل',
+                    type: 'النوع', status: 'الحالة', firstSeen: 'أول ظهور',
+                    riskScore: 'مستوى الخطورة'
+                };
+                return labels[key] || key;
+            },
+            renderCharts() {
+                this.renderUsageChart();
+                this.renderCallDistributionChart();
+                this.renderActivityChart();
+            },
+            renderUsageChart() {
+                const ctx = document.getElementById('usageChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['مكالمات', 'رسائل', 'بيانات', 'تطبيقات', 'شبكات اجتماعية'],
+                        datasets: [{
+                            label: 'نمط الاستخدام',
+                            data: [65, 59, 90, 81, 56],
+                            fill: true,
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgb(75, 192, 192)',
+                            pointBackgroundColor: 'rgb(75, 192, 192)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgb(75, 192, 192)'
+                        }]
+                    },
+                    options: {
+                        elements: {line: {borderWidth: 3}},
+                        scales: {r: {angleLines: {display: false}, suggestedMin: 0, suggestedMax: 100}}
+                    }
+                });
+            },
+            renderCallDistributionChart() {
+                const ctx = document.getElementById('callDistributionChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['محلية', 'دولية', 'مجهولة'],
+                        datasets: [{
+                            data: [70, 25, 5],
+                            backgroundColor: ['#4fd1c5', '#63b3ed', '#fc8181']
+                        }]
+                    }
+                });
+            },
+            renderActivityChart() {
+                const ctx = document.getElementById('activityChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
+                        datasets: [{
+                            label: 'نشاط الرقم',
+                            data: [12, 19, 3, 5, 2, 3],
+                            borderColor: 'rgb(75, 192, 192)',
+                            tension: 0.1
+                        }]
+                    }
+                });
+            },
+            initializeAnimations() {
+                gsap.from("#mainTitle", {duration: 1, opacity: 0, y: -50, ease: "power3.out"});
+                gsap.from("#searchSection", {duration: 1, opacity: 0, y: 50, delay: 0.5, ease: "power3.out"});
+            },
+            shareResults() {
+                // تنفيذ منطق المشاركة هنا
+                alert('تم نسخ رابط النتائج إلى الحافظة!');
+            }
+        }
+    }
+</script>
+</body>
+</html>

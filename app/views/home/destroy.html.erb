@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>محلل الأرقام الذكي</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <style>
+      @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
+      body {
+          font-family: 'Tajawal', sans-serif;
+      }
+      .glass-morphism {
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(10px);
+          border-radius: 20px;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      .gradient-text {
+          background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+      }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-purple-700 via-blue-700 to-teal-500 text-white min-h-screen flex items-center justify-center p-4">
+<div x-data="phoneApp()" class="w-full max-w-2xl">
+  <div class="glass-morphism p-8 space-y-8">
+    <h1 class="text-5xl font-bold text-center gradient-text">محلل الأرقام الذكي</h1>
+
+    <div x-show="!phoneInfo" class="space-y-6">
+      <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 sm:space-x-reverse">
+        <select x-model="countryCode" class="w-full sm:w-1/3 p-3 rounded-lg bg-white bg-opacity-20 text-white border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white">
+          <option value="+966">🇸🇦 السعودية (+966)</option>
+          <option value="+20">🇪🇬 مصر (+20)</option>
+          <option value="+971">🇦🇪 الإمارات (+971)</option>
+        </select>
+        <input x-model="phoneNumber" type="text" placeholder="أدخل رقم الهاتف"
+               class="w-full sm:w-2/3 p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-gray-300 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white">
+      </div>
+      <button @click="searchPhone" class="w-full bg-gradient-to-r from-pink-500 to-yellow-500 text-white p-3 rounded-lg hover:from-pink-600 hover:to-yellow-600 transition duration-300 transform hover:scale-105">
+        <i class="fas fa-search mr-2"></i> تحليل الرقم
+      </button>
+    </div>
+
+    <div x-show="phoneInfo" class="space-y-8">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <template x-for="(value, key) in phoneInfo" :key="key">
+          <div class="bg-white bg-opacity-10 p-4 rounded-lg hover:bg-opacity-20 transition duration-300">
+            <span class="text-teal-300 text-lg" x-text="getLabel(key)"></span>
+            <p class="font-bold text-2xl mt-1" x-text="value"></p>
+          </div>
+        </template>
+      </div>
+
+      <div class="bg-white bg-opacity-10 p-4 rounded-lg">
+        <h3 class="text-xl font-bold mb-4 text-center">إحصائيات الاستخدام</h3>
+        <canvas id="usageChart" class="w-full h-64"></canvas>
+      </div>
+
+      <div class="flex space-x-4 space-x-reverse">
+        <button @click="resetSearch" class="flex-1 bg-red-500 text-white p-3 rounded-lg hover:bg-red-600 transition duration-300">
+          <i class="fas fa-redo mr-2"></i> بحث جديد
+        </button>
+        <button @click="shareResults" class="flex-1 bg-green-500 text-white p-3 rounded-lg hover:bg-green-600 transition duration-300">
+          <i class="fas fa-share-alt mr-2"></i> مشاركة النتائج
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    function phoneApp() {
+        return {
+            countryCode: '+966',
+            phoneNumber: '',
+            phoneInfo: null,
+            searchPhone() {
+                // محاكاة البحث
+                this.phoneInfo = {
+                    number: this.countryCode + this.phoneNumber,
+                    country: 'المملكة العربية السعودية',
+                    type: 'جوال',
+                    carrier: 'STC',
+                    timezone: 'توقيت الرياض (GMT+3)',
+                    activationDate: '15 يناير 2022'
+                };
+                this.$nextTick(() => this.renderChart());
+            },
+            resetSearch() {
+                this.phoneInfo = null;
+                this.phoneNumber = '';
+            },
+            getLabel(key) {
+                const labels = {
+                    number: 'الرقم',
+                    country: 'الدولة',
+                    type: 'النوع',
+                    carrier: 'شركة الاتصالات',
+                    timezone: 'المنطقة الزمنية',
+                    activationDate: 'تاريخ التفعيل'
+                };
+                return labels[key] || key;
+            },
+            renderChart() {
+                const ctx = document.getElementById('usageChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['المكالمات', 'الرسائل', 'البيانات', 'التطبيقات', 'الشبكات الاجتماعية'],
+                        datasets: [{
+                            label: 'نمط الاستخدام',
+                            data: [65, 59, 90, 81, 56],
+                            fill: true,
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            borderColor: 'rgb(255, 99, 132)',
+                            pointBackgroundColor: 'rgb(255, 99, 132)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgb(255, 99, 132)'
+                        }]
+                    },
+                    options: {
+                        elements: {
+                            line: {
+                                borderWidth: 3
+                            }
+                        },
+                        scales: {
+                            r: {
+                                angleLines: {
+                                    display: false
+                                },
+                                suggestedMin: 0,
+                                suggestedMax: 100
+                            }
+                        }
+                    }
+                });
+            },
+            shareResults() {
+                alert('تم نسخ رابط النتائج إلى الحافظة!');
+            }
+        }
+    }
+</script>
+</body>
+</html>

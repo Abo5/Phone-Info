@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>محلل الأرقام الكوانتي المتطور</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/particlesjs/2.2.3/particles.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <style>
+      @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;700&display=swap');
+      body {
+          font-family: 'Tajawal', sans-serif;
+          background: #000;
+          overflow-x: hidden;
+      }
+      .quantum-bg {
+          background: linear-gradient(45deg, #000000, #1a237e);
+      }
+      .quantum-text {
+          background: linear-gradient(90deg, #00bcd4, #3f51b5, #9c27b0);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-size: 200% auto;
+          animation: quantumShift 5s ease infinite;
+      }
+      @keyframes quantumShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+      }
+      #particles-js, #three-container {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          z-index: -1;
+      }
+      .glass-morphism {
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .neon-border {
+          box-shadow: 0 0 10px #4fd1c5, 0 0 20px #4fd1c5, 0 0 30px #4fd1c5, 0 0 40px #4fd1c5;
+      }
+  </style>
+</head>
+<body class="quantum-bg text-white min-h-screen">
+<div id="particles-js"></div>
+<div id="three-container"></div>
+
+<div x-data="phoneApp()" x-init="initializeVisuals()" class="container mx-auto px-4 py-12">
+  <h1 class="text-6xl font-bold text-center quantum-text mb-12">محلل الأرقام الكوانتي المتطور</h1>
+
+  <div class="max-w-4xl mx-auto glass-morphism rounded-3xl shadow-2xl overflow-hidden neon-border">
+    <div class="p-8 space-y-8">
+      <div x-show="!phoneInfo" class="space-y-6" id="searchSection">
+        <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 md:space-x-reverse">
+          <select x-model="countryCode" class="w-full md:w-1/3 p-4 rounded-full bg-indigo-900 bg-opacity-50 text-white border-2 border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition duration-300">
+            <option value="+966">🇸🇦 السعودية (+966)</option>
+            <option value="+20">🇪🇬 مصر (+20)</option>
+            <option value="+971">🇦🇪 الإمارات (+971)</option>
+          </select>
+          <input x-model="phoneNumber" @input="validatePhoneNumber" type="text" placeholder="أدخل رقم الهاتف"
+                 class="w-full md:w-2/3 p-4 rounded-full bg-indigo-900 bg-opacity-50 text-white placeholder-indigo-300 border-2 border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition duration-300">
+        </div>
+        <p x-show="phoneError" x-text="phoneError" class="text-red-500 text-center"></p>
+        <button @click="searchPhone" :disabled="!isValidPhone"
+                class="w-full bg-gradient-to-r from-cyan-500 to-purple-500 text-white p-4 rounded-full hover:from-cyan-600 hover:to-purple-600 transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed">
+          <i class="fas fa-atom mr-2"></i> تحليل كوانتي للرقم
+        </button>
+      </div>
+
+      <div x-show="phoneInfo" class="space-y-8" id="resultSection" style="display: none;">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <template x-for="(value, key) in phoneInfo" :key="key">
+            <div class="bg-indigo-900 bg-opacity-50 p-6 rounded-2xl hover:bg-opacity-70 transition duration-300 transform hover:scale-105">
+              <span class="text-cyan-300 text-lg block mb-2" x-text="getLabel(key)"></span>
+              <p class="font-bold text-2xl quantum-text" x-text="value"></p>
+            </div>
+          </template>
+        </div>
+
+        <div class="bg-indigo-900 bg-opacity-50 p-6 rounded-2xl">
+          <h3 class="text-2xl font-bold mb-4 text-center quantum-text">تحليل الاستخدام الكوانتي</h3>
+          <canvas id="quantumUsageChart" class="w-full h-64"></canvas>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-indigo-900 bg-opacity-50 p-6 rounded-2xl">
+            <h3 class="text-xl font-bold mb-4 text-center quantum-text">تشابك الاتصالات</h3>
+            <canvas id="entanglementChart"></canvas>
+          </div>
+          <div class="bg-indigo-900 bg-opacity-50 p-6 rounded-2xl">
+            <h3 class="text-xl font-bold mb-4 text-center quantum-text">تحليل الأمان الكوانتي</h3>
+            <canvas id="quantumSecurityChart"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-indigo-900 bg-opacity-50 p-6 rounded-2xl">
+          <h3 class="text-xl font-bold mb-4 text-center quantum-text">التوقعات المستقبلية</h3>
+          <p x-text="futurePrediction" class="text-lg text-center"></p>
+        </div>
+
+        <div class="bg-indigo-900 bg-opacity-50 p-6 rounded-2xl">
+          <h3 class="text-xl font-bold mb-4 text-center quantum-text">محاكاة كوانتية</h3>
+          <div id="quantumSimulation" class="w-full h-64 bg-black rounded-lg"></div>
+        </div>
+
+        <div class="flex space-x-4 space-x-reverse">
+          <button @click="resetSearch" class="flex-1 bg-red-600 text-white p-4 rounded-full hover:bg-red-700 transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+            <i class="fas fa-sync-alt mr-2"></i> تحليل جديد
+          </button>
+          <button @click="shareResults" class="flex-1 bg-green-600 text-white p-4 rounded-full hover:bg-green-700 transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+            <i class="fas fa-share-alt mr-2"></i> مشاركة النتائج الكوانتية
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    function phoneApp() {
+        return {
+            countryCode: '+966',
+            phoneNumber: '',
+            phoneInfo: null,
+            phoneError: '',
+            isValidPhone: false,
+            futurePrediction: '',
+
+            validatePhoneNumber() {
+                const phoneRegex = /^[0-9]{9}$/;
+                if (!phoneRegex.test(this.phoneNumber)) {
+                    this.phoneError = 'الرجاء إدخال رقم هاتف صحيح مكون من 9 أرقام';
+                    this.isValidPhone = false;
+                } else {
+                    this.phoneError = '';
+                    this.isValidPhone = true;
+                }
+            },
+
+            searchPhone() {
+                if (!this.isValidPhone) return;
+
+                this.phoneInfo = {
+                    number: this.countryCode + this.phoneNumber,
+                    country: this.getCountryName(this.countryCode),
+                    carrier: this.getRandomCarrier(),
+                    type: this.getRandomDeviceType(),
+                    status: this.getRandomStatus(),
+                    lastEntanglement: this.getRandomTime(),
+                    quantumSecurityLevel: this.getRandomSecurityLevel()
+                };
+
+                this.futurePrediction = this.generateFuturePrediction();
+
+                this.$nextTick(() => {
+                    this.renderCharts();
+                    this.startQuantumSimulation();
+                    gsap.to("#searchSection", {duration: 0.5, opacity: 0, display: "none"});
+                    gsap.fromTo("#resultSection",
+                      {opacity: 0, y: 50, display: "none"},
+                      {duration: 0.8, opacity: 1, y: 0, display: "block", ease: "power3.out"}
+                    );
+                });
+            },
+
+            resetSearch() {
+                gsap.to("#resultSection", {duration: 0.5, opacity: 0, display: "none"});
+                gsap.fromTo("#searchSection",
+                  {opacity: 0, y: -50, display: "none"},
+                  {duration: 0.8, opacity: 1, y: 0, display: "block", ease: "power3.out"}
+                );
+                this.phoneInfo = null;
+                this.phoneNumber = '';
+                this.isValidPhone = false;
+                this.phoneError = '';
+            },
+
+            getLabel(key) {
+                const labels = {
+                    number: 'الرقم الكوانتي', country: 'الدولة', carrier: 'مشغل الاتصال الكوانتي',
+                    type: 'نوع الجهاز', status: 'حالة التشابك', lastEntanglement: 'آخر تشابك',
+                    quantumSecurityLevel: 'مستوى الأمان الكوانتي'
+                };
+                return labels[key] || key;
+            },
+
+            getCountryName(code) {
+                const countries = {
+                    '+966': 'المملكة العربية السعودية',
+                    '+20': 'جمهورية مصر العربية',
+                    '+971': 'الإمارات العربية المتحدة'
+                };
+                return countries[code] || 'غير معروف';
+            },
+
+            getRandomCarrier() {
+                const carriers = ['STC Quantum', 'Mobily Q-Net', 'Zain Entangled'];
+                return carriers[Math.floor(Math.random() * carriers.length)];
+            },
+
+            getRandomDeviceType() {
+                const types = ['هاتف كوانتي', 'جهاز لوحي متشابك', 'ساعة كمومية'];
+                return types[Math.floor(Math.random() * types.length)];
+            },
+
+            getRandomStatus() {
+                const statuses = ['متشابك كوانتيًا', 'في حالة فائقة', 'مستقر كموميًا'];
+                return statuses[Math.floor(Math.random() * statuses.length)];
+            },
+
+            getRandomTime() {
+                const times = ['قبل 2 ثانية', 'قبل 5 دقائق', 'قبل ساعة', 'منذ اليوم'];
+                return times[Math.floor(Math.random() * times.length)];
+            },
+
+            getRandomSecurityLevel() {
+                const levels = ['فائق (99.99%)', 'عالي جدًا (95%)', 'متقدم (90%)'];
+                return levels[Math.floor(Math.random() * levels.length)];
+            },
+
+            renderCharts() {
+                this.renderQuantumUsageChart();
+                this.renderEntanglementChart();
+                this.renderQuantumSecurityChart();
+            },
+
+            renderQuantumUsageChart() {
+                const ctx = document.getElementById('quantumUsageChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['اتصالات كوانتية', 'نقل البيانات الآني', 'تشفير كوانتي', 'حوسبة كوانتية', 'استشعار كوانتي'],
+                        datasets: [{
+                            label: 'الاستخدام الكوانتي',
+                            data: [95, 88, 92, 85, 78],
+                            fill: true,
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgb(75, 192, 192)',
+                            pointBackgroundColor: 'rgb(75, 192, 192)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgb(75, 192, 192)'
+                        }]
+                    },
+                    options: {
+                        elements: {line: {borderWidth: 3}},
+                        scales: {r: {angleLines: {display: false}, suggestedMin: 0, suggestedMax: 100}}
+                    }
+                });
+            },
+
+            renderEntanglementChart() {
+                const ctx = document.getElementById('entanglementChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bubble',
+                    data: {
+                        datasets: [{
+                            label: 'تشابك الاتصالات',
+                            data: [
+                                {x: 20, y: 30, r: 15},
+                                {x: 40, y: 10, r: 10},
+                                {x: 30, y: 20, r: 8},
+                                {x: 10, y: 40, r: 12},
+                                {x: 50, y: 30, r: 18},
+                            ],
+                            backgroundColor: 'rgba(255, 99, 132, 0.6)'
+                        }]
+                    },
+                    options: {
+                        scales: {x: {beginAtZero: true, max: 60}, y: {beginAtZero: true, max: 60}}
+                    }
+                });
+            },
+
+            renderQuantumSecurityChart() {
+                const ctx = document.getElementById('quantumSecurityChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['تشفير كوانتي', 'مفاتيح كوانتية', 'اكتشاف التدخل'],
+                        datasets: [{
+                            data: [45, 35, 20],
+                            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {position: 'top'},
+                            title: {display: true, text: 'توزيع مكونات الأمان الكوانتي'}
+                        }
+                    }
+                });
+            },
+
+            startQuantumSimulation() {
+                const canvas = document.getElementById('quantumSimulation');
+                const ctx = canvas.getContext('2d');
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+
+                const particles = [];
+                const particleCount = 100;
+
+                for (let i = 0; i < particleCount; i++) {
+                    particles.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        radius: Math.random() * 2 + 1,
+                        color: `hsl(${Math.random() * 360}, 50%, 50%)`,
+                        velocity: {
+                            x: (Math.random() - 0.5) * 2,
+                            y: (Math.random() - 0.5) * 2
+                        }
+                    });
+                }
+
+                function animate() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    particles.forEach(particle => {
+                        particle.x += particle.velocity.x;
+                        particle.y += particle.velocity.y;
+
+                        if (particle.x < 0 || particle.x > canvas.width) particle.velocity.x *= -1;
+                        if (particle.y < 0 || particle.y > canvas.height) particle.velocity.y *= -1;
+
+                        ctx.beginPath();
+                        ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+                        ctx.fillStyle = particle.color;
+                        ctx.fill();
+                    });
+
+                    requestAnimationFrame(animate);
+                }
+
+                animate();
+            },
+
+            generateFuturePrediction() {
+                const predictions = [
+                    "من المتوقع أن يشهد هذا الرقم زيادة في نشاط الاتصالات الكوانتية بنسبة 25% خلال الأشهر الستة القادمة.",
+                    "هناك احتمالية بنسبة 80% لترقية هذا الرقم إلى شبكة كوانتية فائقة السرعة في غضون العام القادم.",
+                    "تشير التحليلات إلى إمكانية مشاركة هذا الرقم في تجربة تشابك كوانتي عابرة للقارات خلال الـ 18 شهرًا القادمة.",
+                    "من المرجح أن يستفيد هذا الرقم من تقنيات التشفير الكوانتي المتقدمة في غضون الأشهر التسعة القادمة.",
+                    "تتوقع الخوارزميات الكوانتية زيادة في معدل نقل البيانات لهذا الرقم بنسبة 40% خلال العام القادم."
+                ];
+                return predictions[Math.floor(Math.random() * predictions.length)];
+            },
+
+            shareResults() {
+                const shareData = {
+                    title: 'نتائج التحليل الكوانتي للرقم',
+                    text: `تم تحليل الرقم ${this.phoneInfo.number} باستخدام تقنيات كوانتية متقدمة. ${this.futurePrediction}`,
+                    url: window.location.href
+                };
+
+                if (navigator.share) {
+                    navigator.share(shareData)
+                      .then(() => console.log('تمت المشاركة بنجاح'))
+                      .catch((error) => console.log('خطأ في المشاركة', error));
+                } else {
+                    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareData.text)}&url=${encodeURIComponent(shareData.url)}`;
+                    window.open(shareUrl, '_blank');
+                }
+            },
+
+            initializeVisuals() {
+                particlesJS('particles-js', {
+                    particles: {
+                        number: {value: 80, density: {enable: true, value_area: 800}},
+                        color: {value: "#ffffff"},
+                        shape: {type: "circle"},
+                        opacity: {value: 0.5, random: true},
+                        size: {value: 3, random: true},
+                        move: {enable: true, speed: 1, direction: "none", random: true, out_mode: "out"}
+                    }
+                });
+
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer({alpha: true});
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                document.getElementById('three-container').appendChild(renderer.domElement);
+
+                const geometry = new THREE.IcosahedronGeometry(5, 0);
+                const material = new THREE.MeshBasicMaterial({color: 0x00ff00, wireframe: true});
+                const icosahedron = new THREE.Mesh(geometry, material);
+                scene.add(icosahedron);
+
+                camera.position.z = 15;
+
+                function animate() {
+                    requestAnimationFrame(animate);
+                    icosahedron.rotation.x += 0.005;
+                    icosahedron.rotation.y += 0.005;
+                    renderer.render(scene, camera);
+                }
+                animate();
+            }
+        }
+    }
+
+    // إضافة استجابة للتغيير في حجم النافذة
+    window.addEventListener('resize', () => {
+        const threeContainer = document.getElementById('three-container');
+        const renderer = new THREE.WebGLRenderer({alpha: true});
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        threeContainer.innerHTML = '';
+        threeContainer.appendChild(renderer.domElement);
+    });
+</script>
+</body>
+</html>
